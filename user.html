@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Show Text File</title>
+</head>
+<body>
+    <h1>Show Text File</h1>
+    <button id="showButton">Show Text File</button>
+
+    <script>
+        document.getElementById('showButton').addEventListener('click', function() {
+            // Create an invisible link
+            const link = document.createElement('a');
+            link.style.display = 'none';
+            document.body.appendChild(link);
+
+            // Set the href and download attributes of the link
+            link.href = 's.txt'; // Replace 'example.txt' with the path to your text file
+            link.download = 's.txt'; // Specify the filename for the downloaded file
+
+            // Simulate a click on the link to trigger the download
+            link.click();
+
+            // Clean up by removing the link from the DOM
+            document.body.removeChild(link);
+        });
+    </script>
+</body>
+</html>

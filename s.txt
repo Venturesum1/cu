@@ -1,0 +1,1109 @@
+
+            //1.Ecommerce Cart--->
+
+// src/ProductCart.tsx
+import React, { useState, useEffect } from 'react';
+
+interface Product {
+    title: string;
+    price: number;
+}
+
+interface CartItem extends Product {
+    quantity: number;
+}
+
+const ProductCart: React.FC = () => {
+    const [cart, setCart] = useState<CartItem[]>([]);
+
+    useEffect(() => {
+        fetch('/products.json')
+            .then((response) => response.json())
+            .then((data) => {
+                const initialCart = data.map((product: Product) => ({
+                    ...product,
+                    quantity: 1
+                }));
+                setCart(initialCart);
+            });
+    }, []);
+
+    const handleQuantityChange = (index: number, quantity: number) => {
+        const updatedCart = [...cart];
+        updatedCart[index].quantity = quantity;
+        setCart(updatedCart);
+    };
+
+    const handleRemoveItem = (index: number) => {
+        const updatedCart = cart.filter((_, i) => i !== index);
+        setCart(updatedCart);
+    };
+
+    const calculateTotal = () => {
+        return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    };
+
+    return (
+        <div>
+            <table style={{ border: "1px solid black" }}>
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Total Price</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {cart.map((item, index) => (
+                        <tr key={index}>
+                            <td>{item.title}</td>
+                            <td>{item.price}</td>
+                            <td>
+                                <input
+                                    type="number"
+                                    value={item.quantity}
+                                    min="1"
+                                    onChange={(e) =>
+                                        handleQuantityChange(index, parseInt(e.target.value) || 1)
+                                    }
+                                />
+                            </td>
+                            <td>{item.price * item.quantity}</td>
+                            <td>
+                                <button onClick={() => handleRemoveItem(index)}>Remove</button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            <div>
+                <h2>Total Amount: {calculateTotal()}</h2>
+            </div>
+        </div>
+    );
+};
+
+export default ProductCart;
+
+// src/App.tsx
+import React from 'react';
+import './App.css';
+import ProductCart from './ProductCart';
+
+const App: React.FC = () => {
+    return (
+        <div className="App">
+            <ProductCart />
+        </div>
+    );
+};
+
+export default App;
+
+//--------------------------------------------------------------------------------------------------
+
+//2.SEARCH BOX-->
+
+//books.json
+[
+    {"title": "My Talented book", "author": "ABC"},
+    {"title": "My Third Book", "author": "XYZ"},
+    {"title": "First Book", "author": "CDE"}
+]
+
+// src/SearchResults.tsx
+import React from 'react';
+
+interface Book {
+    title: string;
+    author: string;
+}
+
+interface SearchResultsProps {
+    results: Book[];
+}
+
+const SearchResults: React.FC<SearchResultsProps> = ({ results }) => {
+    return (
+        <div>
+            {results.map((book, index) => (
+                <div key={index}>
+                    {book.title} - {book.author}
+                </div>
+            ))}
+        </div>
+    );
+};
+
+export default SearchResults;
+
+// src/SearchBox.tsx
+import React, { useState, useEffect } from 'react';
+import SearchResults from './SearchResults';
+
+interface Book {
+    title: string;
+    author: string;
+}
+
+const SearchBox: React.FC = () => {
+    const [books, setBooks] = useState<Book[]>([]);
+    const [query, setQuery] = useState<string>('');
+    const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
+
+    useEffect(() => {
+        fetch('/books.json')
+            .then((response) => response.json())
+            .then((data) => {
+                setBooks(data);
+                setFilteredBooks(data);
+            });
+    }, []);
+
+    useEffect(() => {
+        if (query === '') {
+            setFilteredBooks(books);
+        } else {
+            setFilteredBooks(
+                books.filter((book) =>
+                    book.title.toLowerCase().includes(query.toLowerCase())
+                )
+            );
+        }
+    }, [query, books]);
+
+    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setQuery(event.target.value);
+    };
+
+    return (
+        <div>
+            <input
+                type="text"
+                value={query}
+                onChange={handleInputChange}
+                placeholder="Search by title"
+            />
+            <SearchResults results={filteredBooks} />
+        </div>
+    );
+};
+
+export default SearchBox;
+
+// src/App.tsx
+import React from 'react';
+import './App.css';
+import SearchBox from './SearchBox';
+
+const App: React.FC = () => {
+    return (
+        <div className="App">
+            <SearchBox />
+        </div>
+    );
+};
+
+export default App;
+
+//------------------------------------------------------------------------------------------------------
+
+//3.Dream4 player-->
+
+//players.json
+
+[
+    {"name":"Player1","team":"Team1","credits":10},
+    {"name":"Player2","team":"Team1","credits":9},
+    {"name":"Player3","team":"Team2","credits":8},
+    {"name":"Player4","team":"Team1","credits":9},
+    {"name":"Player5","team":"Team2","credits":10}
+]
+
+// src/PlayerTable.tsx
+import React, { useState, useEffect } from 'react';
+
+interface Player {
+    name: string;
+    team: string;
+    credits: number;
+}
+
+const PlayerTable: React.FC = () => {
+    const [players, setPlayers] = useState<Player[]>([]);
+    const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
+
+    useEffect(() => {
+        fetch('/players.json')
+            .then(response => response.json())
+            .then(data => setPlayers(data));
+    }, []);
+
+    const handleButtonClick = (player: Player) => {
+        if (selectedPlayers.includes(player)) {
+            setSelectedPlayers(selectedPlayers.filter(p => p !== player));
+        } else {
+            setSelectedPlayers([...selectedPlayers, player]);
+        }
+    };
+
+    const getTeamStats = (team: string) => {
+        const teamPlayers = selectedPlayers.filter(player => player.team === team);
+        const totalCredits = teamPlayers.reduce((sum, player) => sum + player.credits, 0);
+        return { count: teamPlayers.length, credits: totalCredits };
+    };
+
+    const team1Stats = getTeamStats('Team1');
+    const team2Stats = getTeamStats('Team2');
+
+    return (
+        <div>
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Team</th>
+                        <th>Credits</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {players.map((player) => (
+                        <tr key={player.name}>
+                            <td>{player.name}</td>
+                            <td>{player.team}</td>
+                            <td>{player.credits}</td>
+                            <td>
+                                <button onClick={() => handleButtonClick(player)}>
+                                    {selectedPlayers.includes(player) ? 'Remove' : 'Add'}
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            <div>
+                <p>Team1: {team1Stats.count}  Team1 Credits: {team1Stats.credits}</p>
+                <p>Team2: {team2Stats.count}  Team2 Credits: {team2Stats.credits}</p>
+            </div>
+        </div>
+    );
+};
+
+export default PlayerTable;
+
+// src/App.tsx
+import React from 'react';
+import PlayerTable from './PlayerTable';
+
+const App: React.FC = () => {
+    return (
+        <div className="App">
+            <PlayerTable />
+        </div>
+    );
+};
+
+export default App;
+
+//-----------------------------------------------------------------------------------------------------
+
+//4.StopWatch-->
+
+// src/components/Stopwatch.tsx
+import React, { useState, useEffect } from 'react';
+import Laps from './Laps';
+
+const Stopwatch: React.FC = () => {
+  const [time, setTime] = useState(0);
+  const [running, setRunning] = useState(false);
+  const [laps, setLaps] = useState<number[]>(() => {
+    const savedLaps = localStorage.getItem('laps');
+    return savedLaps ? JSON.parse(savedLaps) : [];
+  });
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined;
+    if (running) {
+      interval = setInterval(() => {
+        setTime(prevTime => prevTime + 1);
+      }, 1000);
+    } else if (!running && time !== 0) {
+      clearInterval(interval);
+    }
+    return () => clearInterval(interval);
+  }, [running, time]);
+
+  useEffect(() => {
+    localStorage.setItem('laps', JSON.stringify(laps));
+  }, [laps]);
+
+  const handleStart = () => setRunning(true);
+  const handleStop = () => setRunning(false);
+  const handleLap = () => setLaps([...laps, time]);
+  const handleReset = () => {
+    setTime(0);
+    setLaps([]);
+    localStorage.removeItem('laps');
+  };
+
+  const handleDeleteLap = (index: number) => {
+    const updatedLaps = laps.filter((_, lapIndex) => lapIndex !== index);
+    setLaps(updatedLaps);
+  };
+
+  return (
+    <div>
+      <h1>Stopwatch</h1>
+      <p>{time} s</p>
+      <button onClick={running ? handleStop : handleStart}>
+        {running ? 'Stop' : 'Start'}
+      </button>
+      <button onClick={handleLap} disabled={!running}>
+        Lap
+      </button>
+      <button onClick={handleReset}>Reset</button>
+      <Laps laps={laps} onDeleteLap={handleDeleteLap} />
+    </div>
+  );
+};
+
+export default Stopwatch;
+
+// src/components/Laps.tsx
+import React from 'react';
+
+interface LapsProps {
+  laps: number[];
+  onDeleteLap: (index: number) => void;
+}
+
+const Laps: React.FC<LapsProps> = ({ laps, onDeleteLap }) => {
+  return (
+    <div>
+      <h2>Laps</h2>
+      <ul>
+        {laps.map((lap, index) => (
+          <li key={index}>
+            Lap {index + 1}: {lap} s
+            <button onClick={() => onDeleteLap(index)}>Delete</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+export default Laps;
+
+// src/App.tsx
+import React from 'react';
+import Stopwatch from './components/Stopwatch';
+
+const App: React.FC = () => {
+  return (
+    <div>
+      <Stopwatch />
+    </div>
+  );
+};
+
+export default App;
+
+//-----------------------------------------------------------------------------------------------------
+
+//ST-1//
+
+1.BMI CALCULATE:-->
+
+public/index.html:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BMI Calculator</title>
+</head>
+<body>
+    <h1>BMI Calculator</h1>
+    <form id="bmiForm">
+        <label for="gender">Gender:</label>
+        <select id="gender" name="gender" required>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+        </select><br><br>
+        <label for="age">Age:</label>
+        <input type="number" id="age" name="age" required><br><br>
+        <label for="weight">Weight (kg):</label>
+        <input type="number" id="weight" name="weight" required><br><br>
+        <label for="height">Height (cm):</label>
+        <input type="number" id="height" name="height" required><br><br>
+        <button type="submit">Calculate BMI</button>
+    </form>
+    <h2 id="bmiResult"></h2>
+    <h2 id="bmiState"></h2>
+
+    <h2>Stored Data</h2>
+    <button onclick="fetchData()">Fetch Data</button>
+    <table id="dataTable" border="1">
+        <thead>
+            <tr>
+                <th>Gender</th>
+                <th>Age</th>
+                <th>Weight</th>
+                <th>Height</th>
+                <th>BMI</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        document.getElementById('bmiForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const gender = document.getElementById('gender').value;
+            const age = document.getElementById('age').value;
+            const weight = document.getElementById('weight').value;
+            const height = document.getElementById('height').value;
+
+            const response = await fetch('/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gender, age, weight, height })
+            });
+            const data = await response.json();
+
+            document.getElementById('bmiResult').textContent = `BMI: ${data.bmi}`;
+            document.getElementById('bmiState').textContent = `State: ${data.state}`;
+        });
+
+        async function fetchData() {
+            const response = await fetch('/getdata');
+            const data = await response.json();
+            const tableBody = document.getElementById('dataTable').querySelector('tbody');
+            tableBody.innerHTML = '';
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                if (item.state === 'Obesity') {
+                    row.style.backgroundColor = 'red';
+                }
+                row.innerHTML = `
+                    <td>${item.gender}</td>
+                    <td>${item.age}</td>
+                    <td>${item.weight}</td>
+                    <td>${item.height}</td>
+                    <td>${item.bmi}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>
+
+server.js:-->
+
+const express = require('express');
+const bodyParser = require('body-parser');
+const fs = require('fs');
+
+const app = express();
+const PORT = 3000;
+
+app.use(bodyParser.json());
+app.use(express.static('public'));
+
+app.post('/calculate', (req, res) => {
+    const { gender, age, weight, height } = req.body;
+    const heightInMeters = height / 100;
+    const bmi = (weight / (heightInMeters * heightInMeters)).toFixed(2);
+
+    let state;
+    if (bmi >= 30) {
+        state = 'Obesity';
+    } else if (bmi >= 25) {
+        state = 'Overweight';
+    } else {
+        state = 'Normal';
+    }
+
+    const data = {
+        gender,
+        age,
+        weight,
+        height,
+        bmi,
+        state
+    };
+
+    fs.readFile('data.json', (err, fileData) => {
+        let jsonData = [];
+        if (!err) {
+            jsonData = JSON.parse(fileData);
+        }
+        jsonData.push(data);
+        fs.writeFile('data.json', JSON.stringify(jsonData, null, 2), (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to save data' });
+            }
+            res.json(data);
+        });
+    });
+});
+
+app.get('/getdata', (req, res) => {
+    fs.readFile('data.json', (err, fileData) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read data' });
+        }
+        res.json(JSON.parse(fileData));
+    });
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+
+
+2.Security Key:-->
+
+//keys.json
+[
+    "key1",
+    "key2",
+    "key3"
+]
+
+//users.json:
+
+[
+    {
+        "name": "Alice",
+        "key": "key1",
+        "gender": "female"
+    },
+    {
+        "name": "Bob",
+        "key": "key2",
+        "gender": "male"
+    }
+]
+
+//server.js
+
+const fs = require('fs');
+const express = require('express');
+const bodyParser = require('body-parser');
+
+const app = express();
+const PORT = 3000;
+
+app.use(bodyParser.json());
+app.use(express.static('public'));
+
+const logAttempt = (key, isValid) => {
+    const logMessage = `${new Date().toISOString()} - Key: ${key} - ${isValid ? 'Valid' : 'Invalid'}\n`;
+    fs.appendFile('logs.txt', logMessage, err => {
+        if (err) console.error('Failed to log attempt:', err);
+    });
+};
+
+app.get('/getGender/:gender', (req, res) => {
+    const gender = req.params.gender.toLowerCase();
+    fs.readFile('users.json', (err, fileData) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read users data' });
+        }
+        const users = JSON.parse(fileData);
+        const filteredUsers = users.filter(user => user.gender.toLowerCase() === gender);
+        res.json(filteredUsers);
+    });
+});
+
+app.get('/getSecureGender/:gender/:securitykey', (req, res) => {
+    const { gender, securitykey } = req.params;
+    
+    fs.readFile('keys.json', (err, keysData) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read security keys' });
+        }
+        const keys = JSON.parse(keysData);
+        const isValidKey = keys.includes(securitykey);
+        
+        logAttempt(securitykey, isValidKey);
+
+        if (!isValidKey) {
+            return res.status(403).json({ error: 'Invalid security key' });
+        }
+
+        fs.readFile('users.json', (err, fileData) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to read users data' });
+            }
+            const users = JSON.parse(fileData);
+            const filteredUsers = users.filter(user => user.gender.toLowerCase() === gender.toLowerCase());
+            res.json(filteredUsers);
+        });
+    });
+});
+
+app.get('/logs', (req, res) => {
+    fs.readFile('logs.txt', 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read logs' });
+        }
+        const logEntries = data.split('\n').filter(line => line).map(line => {
+            const [timestamp, , key, status] = line.split(' - ');
+            return { timestamp, key, status };
+        });
+        res.json(logEntries);
+    });
+});
+
+app.get('/logs.html', (req, res) => {
+    res.sendFile(__dirname + '/public/logs.html');
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+3.Countries Json:-->
+
+//index.html:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Countries</title>
+</head>
+<body>
+    <h1>Countries</h1>
+    <table id="countriesTable" border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Code</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <button onclick="fetchCountries()">Refresh</button>
+    <button onclick="resetCountries()">Reset</button>
+
+    <script>
+        async function fetchCountries() {
+            const response = await fetch('/getCountries');
+            const countries = await response.json();
+            const tableBody = document.getElementById('countriesTable').querySelector('tbody');
+            tableBody.innerHTML = '';
+            countries.forEach(country => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${country._id}</td>
+                    <td>${country.name}</td>
+                    <td>${country.code}</td>
+                    <td><button onclick="deleteCountry('${country.code}')">Delete</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        async function deleteCountry(code) {
+            const response = await fetch(`/deleteCountry/${code}`, { method: 'DELETE' });
+            const countries = await response.json();
+            const tableBody = document.getElementById('countriesTable').querySelector('tbody');
+            tableBody.innerHTML = '';
+            countries.forEach(country => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${country._id}</td>
+                    <td>${country.name}</td>
+                    <td>${country.code}</td>
+                    <td><button onclick="deleteCountry('${country.code}')">Delete</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        async function resetCountries() {
+            const response = await fetch('/reset', { method: 'POST' });
+            const countries = await response.json();
+            const tableBody = document.getElementById('countriesTable').querySelector('tbody');
+            tableBody.innerHTML = '';
+            countries.forEach(country => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${country._id}</td>
+                    <td>${country.name}</td>
+                    <td>${country.code}</td>
+                    <td><button onclick="deleteCountry('${country.code}')">Delete</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        fetchCountries();
+    </script>
+</body>
+</html>
+
+//server.js
+
+const fs = require('fs');
+const express = require('express');
+const bodyParser = require('body-parser');
+const path = require('path');
+
+const app = express();
+const PORT = 3000;
+
+app.use(bodyParser.json());
+app.use(express.static('public'));
+
+app.get('/getCountries', (req, res) => {
+    fs.readFile('countries.json', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read countries data' });
+        }
+        res.json(JSON.parse(data));
+    });
+});
+
+app.delete('/deleteCountry/:code', (req, res) => {
+    const { code } = req.params;
+
+    fs.readFile('countries.json', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read countries data' });
+        }
+        let countries = JSON.parse(data);
+        countries = countries.filter(country => country.code !== code);
+        
+        fs.writeFile('countries.json', JSON.stringify(countries, null, 2), (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to delete country' });
+            }
+            res.json(countries);
+        });
+    });
+});
+
+app.post('/reset', (req, res) => {
+    fs.readFile('countries_backup.json', (err, backupData) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read backup data' });
+        }
+
+        fs.writeFile('countries.json', backupData, (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to reset countries data' });
+            }
+            res.json(JSON.parse(backupData));
+        });
+    });
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+4.User Query:-->
+
+//server.js
+
+const express = require('express');
+const bodyParser = require('body-parser');
+const fs = require('fs');
+const axios = require('axios');
+const path = require('path');
+
+const app = express();
+const PORT = 3000;
+
+app.use(bodyParser.json());
+app.use(express.static('public'));
+
+const fetchAndStoreUsers = async () => {
+    try {
+        const response = await axios.get('https://reqres.in/api/users?page=2');
+        const users = response.data.data.map(user => ({
+            name: `${user.first_name} ${user.last_name}`,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            avatar: user.avatar,
+            hits: 0
+        }));
+        fs.writeFileSync('users.json', JSON.stringify(users, null, 2));
+    } catch (error) {
+        console.error('Failed to fetch users:', error);
+    }
+};
+
+// Fetch and store users when the server starts
+fetchAndStoreUsers();
+
+app.get('/getusers', (req, res) => {
+    fs.readFile('users.json', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read users data' });
+        }
+        const users = JSON.parse(data);
+        res.json({ users, total: users.length });
+    });
+});
+
+app.get('/user/:email', (req, res) => {
+    const { email } = req.params;
+
+    fs.readFile('users.json', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read users data' });
+        }
+        let users = JSON.parse(data);
+        const user = users.find(user => user.email === email);
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        user.hits += 1;
+
+        fs.writeFile('users.json', JSON.stringify(users, null, 2), (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to update user hits' });
+            }
+            res.json(user);
+        });
+    });
+});
+
+app.get('/maxuser', (req, res) => {
+    fs.readFile('users.json', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read users data' });
+        }
+        const users = JSON.parse(data);
+        const maxUser = users.reduce((max, user) => (user.hits > max.hits ? user : max), users[0]);
+        res.json(maxUser);
+    });
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+//index.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Users</title>
+</head>
+<body>
+    <h1>Users</h1>
+    <table id="usersTable" border="1">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Avatar</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <script>
+        async function fetchUsers() {
+            const response = await fetch('/getusers');
+            const data = await response.json();
+            const tableBody = document.getElementById('usersTable').querySelector('tbody');
+            tableBody.innerHTML = '';
+            data.users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.name}</td>
+                    <td>${user.email}</td>
+                    <td>${user.first_name}</td>
+                    <td>${user.last_name}</td>
+                    <td><img src="${user.avatar}" alt="Avatar" width="50" height="50"></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        fetchUsers();
+    </script>
+</body>
+</html>
+
+5.Hangman Game:-->
+
+//questions.json
+
+[
+  {
+    "Question": "Where is the head office of Code Quotient?",
+    "Answer": "Mohali"
+  }
+]
+
+// server.js
+
+const express = require('express');
+const bodyParser = require('body-parser');
+const fs = require('fs');
+
+const app = express();
+const PORT = 3000;
+
+app.use(bodyParser.json());
+app.use(express.static('public'));
+
+// Endpoint to get a question
+app.get('/get_question', (req, res) => {
+    fs.readFile('questions.json', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to read questions' });
+        }
+        const questions = JSON.parse(data);
+        const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
+        res.json(randomQuestion);
+    });
+});
+
+// Endpoint to store game result
+app.post('/store', (req, res) => {
+    const result = req.body;
+
+    fs.readFile('results.json', (err, data) => {
+        let results = [];
+        if (!err) {
+            results = JSON.parse(data);
+        }
+        results.push(result);
+        fs.writeFile('results.json', JSON.stringify(results, null, 2), (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to store result' });
+            }
+            res.json({ message: 'Result stored successfully' });
+        });
+    });
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+//index.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hangman Game</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #letters { margin-bottom: 20px; }
+        .letter { display: inline-block; width: 30px; height: 30px; text-align: center; line-height: 30px; margin: 5px; background-color: #ddd; cursor: pointer; }
+        .letter.disabled { background-color: #bbb; cursor: not-allowed; }
+        #question { margin-bottom: 20px; }
+        #answer { margin-bottom: 20px; font-size: 24px; letter-spacing: 10px; }
+        #lifes { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Hangman Game</h1>
+    <div id="question"></div>
+    <div id="answer"></div>
+    <div id="letters"></div>
+    <div id="lifes">Lives: <span id="lifeCount">3</span></div>
+    <div id="result"></div>
+    <script>
+        let currentQuestion;
+        let currentAnswer;
+        let displayedAnswer;
+        let lives = 3;
+
+        function init() {
+            fetch('/get_question')
+                .then(response => response.json())
+                .then(data => {
+                    currentQuestion = data.Question;
+                    currentAnswer = data.Answer.toUpperCase();
+                    displayedAnswer = '_ '.repeat(currentAnswer.length);
+                    document.getElementById('question').innerText = currentQuestion;
+                    document.getElementById('answer').innerText = displayedAnswer.trim();
+                    generateLetters();
+                });
+        }
+
+        function generateLetters() {
+            const lettersContainer = document.getElementById('letters');
+            lettersContainer.innerHTML = '';
+            for (let i = 65; i <= 90; i++) {
+                const letter = document.createElement('span');
+                letter.innerText = String.fromCharCode(i);
+                letter.classList.add('letter');
+                letter.onclick = () => handleLetterClick(letter);
+                lettersContainer.appendChild(letter);
+            }
+        }
+
+        function handleLetterClick(letterElement) {
+            const letter = letterElement.innerText;
+            letterElement.classList.add('disabled');
+            letterElement.onclick = null;
+
+            if (currentAnswer.includes(letter)) {
+                let newDisplayedAnswer = '';
+                for (let i = 0; i < currentAnswer.length; i++) {
+                    if (currentAnswer[i] === letter) {
+                        newDisplayedAnswer += letter + ' ';
+                    } else {
+                        newDisplayedAnswer += displayedAnswer[i * 2] + ' ';
+                    }
+                }
+                displayedAnswer = newDisplayedAnswer;
+                document.getElementById('answer').innerText = displayedAnswer.trim();
+
+                if (!displayedAnswer.includes('_')) {
+                    endGame(true);
+                }
+            } else {
+                lives--;
+                document.getElementById('lifeCount').innerText = lives;
+                if (lives === 0) {
+                    endGame(false);
+                }
+            }
+        }
+
+        function endGame(won) {
+            const resultMessage = won ? 'You have won!' : `You have lost! The correct answer was ${currentAnswer}`;
+            document.getElementById('result').innerText = resultMessage;
+            document.getElementById('letters').querySelectorAll('.letter').forEach(letter => {
+                letter.onclick = null;
+                letter.classList.add('disabled');
+            });
+
+            fetch('/store', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ won, attempts: currentAnswer.length })
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>
